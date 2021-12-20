@@ -7,7 +7,7 @@ interface TitlebarProps {
 
 export const Titlebar: FC<TitlebarProps> = ({ title }) => {
   return (
-    <Flex flex='0 0 100%' mb={4}>
+    <Flex w='100%' mb={4}>
       <Heading isTruncated>{title}</Heading>
     </Flex>
   );

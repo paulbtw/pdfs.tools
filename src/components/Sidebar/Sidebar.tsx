@@ -27,18 +27,18 @@ export const Sidebar: FC = ({ children }) => {
         </DrawerContent>
       </Drawer>
       <Navbar onOpen={onOpen} />
-      <Box ml={{ base: 0, md: 60 }} transition='.3s ease'>
-        <Container maxW='container.lg'>
-          <Box
-            as='main'
-            p='4'
-            display='flex'
-            justifyContent='center'
-            flexWrap='wrap'
-          >
-            {children}
-          </Box>
-        </Container>
+      <Box
+        ml={{ base: 0, md: 60 }}
+        transition='.3s ease'
+        height='calc(100vh - 56px)'
+        as='main'
+        p='4'
+        display='flex'
+        justifyContent='center'
+        flexWrap='wrap'
+        overflow='auto'
+      >
+        <Container maxW='container.lg'>{children}</Container>
       </Box>
     </Box>
   );

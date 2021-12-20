@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as PDFLib from 'pdf-lib';
 import { degrees } from 'pdf-lib';
 import { PageInfo } from '../types';
-import { readAsDataURL } from '../utils';
+import { compareArrays, readAsDataURL } from '../utils';
 
 export const usePDF = () => {
   const [file, setFile] = useState<File | null>(null);
   const [pdf, setPdf] = useState<string | null>(null);
   const [pageInfo, setPageInfo] = useState<PageInfo[]>([]);
+  const [newOrder, setNewOrder] = useState<PageInfo[]>([]);
   const [pageCount, setPageCount] = useState<number>(0);
   const [pageIndex, setPageIndex] = useState<number>(-1);
   const [isMultiPage, setIsMultiPage] = useState<boolean>(false);
@@ -15,6 +16,29 @@ export const usePDF = () => {
   const [isLastPage, setIsLastPage] = useState(false);
   const [title, setTitle] = useState<string | undefined>();
 
+  useEffect(() => {
+    setIsFirstPage(pageIndex === 1);
+    setIsLastPage(pageIndex === pageCount);
+  }, [pageIndex, pageCount]);
+
+  // Pagination
+  const nextPage = useCallback(() => {
+    if (pageIndex >= pageCount) {
+      return;
+    }
+    const newPageIndex = pageIndex + 1;
+    setPageIndex(newPageIndex);
+  }, [pageIndex, pageCount]);
+
+  const prevPage = useCallback(() => {
+    if (pageIndex <= 1) {
+      return;
+    }
+    const newPageIndex = pageIndex - 1;
+    setPageIndex(newPageIndex);
+  }, [pageIndex]);
+
+  // Update
   const update = async (updatedPdf: string | null) => {
     if (!updatedPdf) {
       setPageCount(0);
@@ -24,7 +48,9 @@ export const usePDF = () => {
       setIsLastPage(false);
       setTitle(undefined);
       setPageInfo([]);
+      setNewOrder([]);
       setPdf(null);
+      setFile(null);
       return;
     }
     const loadedPdf = await PDFLib.PDFDocument.load(updatedPdf);
@@ -46,6 +72,7 @@ export const usePDF = () => {
     });
 
     setPageInfo(pageInfoArray);
+    setNewOrder(pageInfoArray);
     setIsMultiPage(multi);
     setIsFirstPage(pageIndex === 1);
     setIsLastPage(pageIndex === pages.length);
@@ -53,35 +80,12 @@ export const usePDF = () => {
     setPdf(updatedPdf);
   };
 
-  const reset = () => {
-    setFile(null);
-    setPdf(null);
-    setPageCount(0);
-    setPageIndex(-1);
-    setTitle(undefined);
+  // Reset PDF
+  const reset = async () => {
+    await update(null);
   };
 
-  const nextPage = () => {
-    if (pageIndex >= pageCount) {
-      return;
-    }
-    const newPageIndex = pageIndex + 1;
-    setPageIndex(newPageIndex);
-    setIsFirstPage(newPageIndex === 0);
-    setIsLastPage(newPageIndex === pageCount - 1);
-  };
-
-  const prevPage = () => {
-    if (pageIndex <= 1) {
-      return;
-    }
-    const newPageIndex = pageIndex - 1;
-    setPageIndex(newPageIndex);
-    setIsFirstPage(newPageIndex === 0);
-    setIsLastPage(newPageIndex === pageCount - 1);
-  };
-
-  const reorderPages = async (newOrder: PageInfo[]) => {
+  const reorderPages = async () => {
     if (!pdf) {
       return;
     }
@@ -114,13 +118,24 @@ export const usePDF = () => {
     await update(savedPdfDoc);
   };
 
-  const save = async (newOrder?: PageInfo[]) => {
+  const checkForChanges = async () => {
     if (!pdf) {
       return;
     }
-    if (newOrder) {
-      await reorderPages(newOrder);
+
+    const hasNewOrder = compareArrays(newOrder, pageInfo);
+
+    if (hasNewOrder) {
+      await reorderPages();
     }
+  };
+
+  const save = async () => {
+    if (!pdf) {
+      return;
+    }
+
+    await checkForChanges();
 
     const fileName = file?.name ? file.name : title;
     const link = document.createElement('a');
@@ -143,6 +158,8 @@ export const usePDF = () => {
     if (loadedPDFs.length === 0) {
       throw new Error('No PDFs loaded');
     }
+
+    setFile(f[0]);
 
     const initialPDF = await PDFLib.PDFDocument.load(loadedPDFs[0]);
 
@@ -220,5 +237,7 @@ export const usePDF = () => {
     pageInfo,
     addNewFile,
     encrypt,
+    setNewOrder,
+    newOrder,
   };
 };

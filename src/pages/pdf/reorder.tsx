@@ -1,21 +1,23 @@
 /* eslint-disable no-nested-ternary */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button, Flex } from '@chakra-ui/react';
 
 import { NextPage } from 'next';
 import { Drop, Editing, Titlebar } from '../../components';
 import { usePDF } from '../../hooks';
-import { PageInfo } from '../../types';
 
 const Reorder: NextPage = () => {
-  const { initialize, reset, save, pdf, reorderPages, pageInfo, addNewFile } =
-    usePDF();
-  const [newOrder, setNewOrder] = useState<PageInfo[]>([]);
+  const {
+    initialize,
+    reset,
+    save,
+    pdf,
+    reorderPages,
+    addNewFile,
+    setNewOrder,
+    newOrder,
+  } = usePDF();
   const [finished, setFinished] = useState(false);
-
-  useEffect(() => {
-    setNewOrder(pageInfo);
-  }, [pageInfo]);
 
   return (
     <>

@@ -8,7 +8,7 @@ const Protect: NextPage = () => {
       <Titlebar title='Encrypt PDF' />
       <Flex flex='0 0 100%'>
         Waiting for{' '}
-        <Link href='https://github.com/Hopding/pdf-lib/pull/1015'> Merge</Link>
+        <Link href='https://github.com/Hopding/pdf-lib/pull/1015'>Merge</Link>
       </Flex>
     </>
   );

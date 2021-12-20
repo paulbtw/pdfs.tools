@@ -8,7 +8,7 @@ interface EditingProps {
   setNewOrder: Dispatch<SetStateAction<PageInfo[]>>;
   newOrder: PageInfo[];
   pdf: string;
-  reorderPages: (newOrder: PageInfo[]) => void;
+  reorderPages: () => void;
   reset: () => void;
   setFinished: Dispatch<SetStateAction<boolean>>;
   addNewFile: (f: File[]) => void;
@@ -39,7 +39,7 @@ export const Editing: FC<EditingProps> = ({
         <Button onClick={reset}>Reset</Button>
         <Button
           onClick={() => {
-            reorderPages(newOrder);
+            reorderPages();
             setFinished(true);
           }}
         >

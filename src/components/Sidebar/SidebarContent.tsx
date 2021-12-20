@@ -18,7 +18,7 @@ import { VscPreview } from 'react-icons/vsc';
 import { NavItem } from './NavItem';
 
 export const SidebarContent: FC<BoxProps> = (props) => {
-  const { onToggle, isOpen } = useDisclosure();
+  const { onToggle, isOpen } = useDisclosure({ isOpen: true });
 
   return (
     <Box

@@ -67,7 +67,7 @@ export const SortableGrid: FC<SortableGridProps> = ({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <Box display='grid' gridTemplateColumns='repeat(auto-fill, 200px)'>
+      <Box display='grid' gridTemplateColumns='repeat(auto-fill, 191px)'>
         <SortableContext items={newOrder} strategy={rectSortingStrategy}>
           {newOrder.map(({ id, rotation, pageNumber }) => (
             <SortableItem

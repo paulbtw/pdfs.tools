@@ -28,8 +28,8 @@ export const SortableItem: FC<SortableItemProps> = ({
     useSortable({ id });
   return (
     <Box
-      w='200px'
-      h='200px'
+      w='191px'
+      h='220px'
       border='1px'
       flex='0 0 21%'
       ref={setNodeRef}
@@ -85,8 +85,8 @@ export const SortableItem: FC<SortableItemProps> = ({
           <Page
             rotate={rotation}
             pageNumber={pageNumber}
-            width={123}
-            height={160}
+            height={[0, 180].includes(rotation) ? 160 : undefined}
+            width={[90, 270].includes(rotation) ? 160 : undefined}
           />
         </Document>
       </Box>

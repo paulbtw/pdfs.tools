@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import * as PDFLib from 'pdf-lib';
 import { degrees } from 'pdf-lib';
 import { PageInfo } from '../types';
-import { compareArrays, readAsDataURL } from '../utils';
+import { compareArrays, readFiles } from '../utils';
 
 export const usePDF = () => {
-  const [file, setFile] = useState<File | null>(null);
   const [pdf, setPdf] = useState<string | null>(null);
   const [pageInfo, setPageInfo] = useState<PageInfo[]>([]);
   const [newOrder, setNewOrder] = useState<PageInfo[]>([]);
@@ -15,6 +14,7 @@ export const usePDF = () => {
   const [isFirstPage, setIsFirstPage] = useState(false);
   const [isLastPage, setIsLastPage] = useState(false);
   const [title, setTitle] = useState<string | undefined>();
+  const [fileName, setFileName] = useState<string | undefined>();
 
   useEffect(() => {
     setIsFirstPage(pageIndex === 1);
@@ -38,56 +38,53 @@ export const usePDF = () => {
     setPageIndex(newPageIndex);
   }, [pageIndex]);
 
-  // Update
-  const update = async (updatedPdf: string | null) => {
-    if (!updatedPdf) {
-      setPageCount(0);
-      setPageIndex(-1);
-      setIsMultiPage(false);
-      setIsFirstPage(false);
-      setIsLastPage(false);
-      setTitle(undefined);
-      setPageInfo([]);
-      setNewOrder([]);
-      setPdf(null);
-      setFile(null);
-      return;
-    }
-    const loadedPdf = await PDFLib.PDFDocument.load(updatedPdf);
-    const pages = loadedPdf.getPages();
-    const multi = pages.length > 1;
+  useEffect(() => {
+    const updatePDF = async () => {
+      if (!pdf) {
+        setPageCount(0);
+        setPageIndex(-1);
+        setIsMultiPage(false);
+        setIsFirstPage(false);
+        setIsLastPage(false);
+        setTitle(undefined);
+        setPageInfo([]);
+        setNewOrder([]);
+        return;
+      }
 
-    setPageCount(pages.length);
-    if (pageIndex >= pages.length || pageIndex === -1) {
-      setPageIndex(1);
-    }
-    const pageInfoArray = pages.map((curPage, index) => {
-      return {
-        width: curPage.getWidth(),
-        height: curPage.getHeight(),
-        rotation: curPage.getRotation().angle,
-        pageNumber: index + 1,
-        id: `${index}`,
-      };
-    });
+      const loadedPdf = await PDFLib.PDFDocument.load(pdf);
+      const pages = loadedPdf.getPages();
+      const multi = pages.length > 1;
+      setPageCount(pages.length);
 
-    setPageInfo(pageInfoArray);
-    setNewOrder(pageInfoArray);
-    setIsMultiPage(multi);
-    setIsFirstPage(pageIndex === 1);
-    setIsLastPage(pageIndex === pages.length);
-    setTitle(loadedPdf.getTitle());
-    setPdf(updatedPdf);
-  };
+      const pageInfoArray = pages.map((curPage, index) => {
+        return {
+          width: curPage.getWidth(),
+          height: curPage.getHeight(),
+          rotation: curPage.getRotation().angle,
+          pageNumber: index + 1,
+          id: `${index}`,
+        };
+      });
+
+      setPageInfo(pageInfoArray);
+      setNewOrder(pageInfoArray);
+      setIsMultiPage(multi);
+
+      setTitle(loadedPdf.getTitle());
+    };
+
+    updatePDF();
+  }, [pdf, pageCount]);
 
   // Reset PDF
-  const reset = async () => {
-    await update(null);
-  };
+  const reset = useCallback(() => {
+    setPdf(null);
+  }, []);
 
   const reorderPages = async () => {
     if (!pdf) {
-      return;
+      return null;
     }
 
     const pdfDoc = await PDFLib.PDFDocument.load(pdf);
@@ -95,7 +92,6 @@ export const usePDF = () => {
 
     for (let currentPage = 0; currentPage < newOrder.length; currentPage++) {
       pdfDoc.removePage(currentPage);
-
       pdfDoc
         .insertPage(
           currentPage,
@@ -115,19 +111,8 @@ export const usePDF = () => {
     }
 
     const savedPdfDoc = await pdfDoc.saveAsBase64({ dataUri: true });
-    await update(savedPdfDoc);
-  };
-
-  const checkForChanges = async () => {
-    if (!pdf) {
-      return;
-    }
-
-    const hasNewOrder = compareArrays(newOrder, pageInfo);
-
-    if (hasNewOrder) {
-      await reorderPages();
-    }
+    setPdf(savedPdfDoc);
+    return savedPdfDoc;
   };
 
   const save = async () => {
@@ -135,31 +120,25 @@ export const usePDF = () => {
       return;
     }
 
-    await checkForChanges();
+    const hasNewOrder = compareArrays(pageInfo, newOrder);
 
-    const fileName = file?.name ? file.name : title;
+    if (!hasNewOrder) {
+      await reorderPages();
+    }
+
+    const fileNameDownload = fileName || title;
     const link = document.createElement('a');
     link.href = pdf;
-    link.download = fileName ?? 'file.pdf';
+    link.download = fileNameDownload ?? 'file.pdf';
     link.click();
   };
 
   const initialize = async (f: File[]) => {
-    const loadedPDFs = await Promise.all(
-      f.map(async (fileToRead) => {
-        const buffer = await readAsDataURL(fileToRead);
-        if (!buffer) {
-          throw new Error('Could not read file');
-        }
-        return buffer;
-      }),
-    );
+    const loadedPDFs = await readFiles(f);
 
     if (loadedPDFs.length === 0) {
       throw new Error('No PDFs loaded');
     }
-
-    setFile(f[0]);
 
     const initialPDF = await PDFLib.PDFDocument.load(loadedPDFs[0]);
 
@@ -176,26 +155,26 @@ export const usePDF = () => {
     }
 
     const savedPdf = await initialPDF.saveAsBase64({ dataUri: true });
-
-    await update(savedPdf);
+    setFileName(f[0].name);
+    setPdf(savedPdf);
   };
 
   const addNewFile = async (f: File[]) => {
-    const loadedPDFs = await Promise.all(
-      f.map(async (fileToRead) => {
-        const buffer = await readAsDataURL(fileToRead);
-        if (!buffer) {
-          throw new Error('Could not read file');
-        }
-        return buffer;
-      }),
-    );
+    const hasNewOrder = !compareArrays(pageInfo, newOrder);
+    let pdfToUpdate = pdf;
+    if (hasNewOrder) {
+      pdfToUpdate = await reorderPages();
+      if (!pdfToUpdate) {
+        throw Error('PDF could not be reordered');
+      }
+    }
+    const loadedPDFs = await readFiles(f);
 
-    if (loadedPDFs.length === 0 || !pdf) {
+    if (loadedPDFs.length === 0 || !pdfToUpdate) {
       throw new Error('No PDFs loaded');
     }
 
-    const initialPDF = await PDFLib.PDFDocument.load(pdf);
+    const initialPDF = await PDFLib.PDFDocument.load(pdfToUpdate);
 
     // eslint-disable-next-line no-restricted-syntax
     for await (const pdfToMerge of loadedPDFs) {
@@ -210,8 +189,7 @@ export const usePDF = () => {
     }
 
     const savedPdf = await initialPDF.saveAsBase64({ dataUri: true });
-
-    await update(savedPdf);
+    setPdf(savedPdf);
   };
 
   const encrypt = async (_password: string) => {
@@ -219,7 +197,6 @@ export const usePDF = () => {
   };
 
   return {
-    file,
     pdf,
     initialize,
     reset,

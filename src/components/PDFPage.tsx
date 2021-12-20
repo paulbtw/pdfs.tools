@@ -9,7 +9,7 @@ interface PageProps {
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
-export const PDFPage: FC<PageProps> = ({ pdf, pageCount, currentPage }) => {
+export const PDFPage: FC<PageProps> = ({ pdf, pageCount }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   const child = ref?.current?.children[2];

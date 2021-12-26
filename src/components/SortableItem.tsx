@@ -40,6 +40,12 @@ export const SortableItem: FC<SortableItemProps> = ({
       }}
       justifyItems='center'
       alignItems='center'
+      _hover={{
+        backgroundColor: 'gray.500',
+      }}
+      transitionProperty='background-color'
+      transitionDuration='0.4s'
+      transitionTimingFunction='ease-in-out'
     >
       <Box display='flex' justifyContent='center' width='100%' height='24px'>
         <IconButton

@@ -1,3 +1,5 @@
+import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
+
 export enum DragActions {
   MOVE = 'MOVE',
   SCALE = 'SCALE',
@@ -36,4 +38,25 @@ export interface PageInfo {
   rotation: number;
   pageNumber: number;
   id: string;
+}
+
+export interface PDFInfo {
+  id: string;
+  file: File;
+  fileName: string;
+  uint8Array: Uint8Array;
+  title: string;
+  pageCount: number;
+  pdfDocument: PDFDocumentProxy | null;
+  pages: {
+    width: number;
+    height: number;
+    rotation: number;
+    pageNumber: number;
+  }[];
+}
+
+export interface PDFProxyInfo {
+  id: string;
+  PDFDocumentProxy: PDFDocumentProxy;
 }

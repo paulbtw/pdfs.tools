@@ -52,3 +52,22 @@ export const readAsPDF = async (
   const url = window.URL.createObjectURL(blob);
   return getDocument({ url, password }).promise;
 };
+
+export const fileToUint8Array = async (file: File): Promise<Uint8Array> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (!e.target) {
+        throw new Error('FileReader onload event target is null');
+      }
+      const arrayBuffer = e.target.result;
+      if (!arrayBuffer) {
+        throw new Error('FileReader onload event result is null');
+      }
+      const uint8Array = new Uint8Array(arrayBuffer as ArrayBuffer);
+      resolve(uint8Array);
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+};

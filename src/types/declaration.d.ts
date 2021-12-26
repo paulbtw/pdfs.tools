@@ -1,3 +1,5 @@
+import { Page } from 'react-pdf';
+
 interface W3Color {
   toRgb: () => { r: number; b: number; g: number; a: number };
 }
@@ -51,3 +53,7 @@ type Attachment = ImageAttachment | DrawingAttachment | TextAttachment;
 type Attachments = Attachment[];
 
 type DragEventListener<T> = (e: React.MouseEvent<T>) => void;
+
+interface PageProps extends Page {
+  pdf: PDFDocumentProxy;
+}

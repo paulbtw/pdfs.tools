@@ -4,7 +4,6 @@ import { useColorModeValue } from '@chakra-ui/react';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { Page } from 'react-pdf';
 import { PDFInfo } from '../../types';
-import { PDFLoader } from './PDFLoader';
 import { Sidebar } from './Sidebar';
 
 /**
@@ -51,14 +50,6 @@ export const Organize: FC<OrganizeProps> = ({
           },
         }}
       >
-        {pdfs.map((pdf) => (
-          <PDFLoader
-            key={pdf.id}
-            pdf={pdf}
-            onLoadSuccess={setPDFDocument}
-            onUnload={deletePDF}
-          />
-        ))}
         {pdfs.map((pdf) => {
           if (!pdf.pdfDocument) {
             return null;
@@ -75,7 +66,7 @@ export const Organize: FC<OrganizeProps> = ({
         })}
       </Box>
       <Box flexBasis='440px' bg={useColorModeValue('white', 'gray.800')}>
-        <Sidebar resetAll={resetAll} pdfs={pdfs} />
+        <Sidebar resetAll={resetAll} pdfs={pdfs} deletePDF={deletePDF} />
       </Box>
     </Flex>
   );

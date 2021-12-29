@@ -17,9 +17,10 @@ import { FileItem } from './FileItem';
 interface SidebarProps {
   resetAll: (full?: boolean) => void;
   pdfs: PDFInfo[];
+  deletePDF: (id: string) => void;
 }
 
-export const Sidebar: FC<SidebarProps> = ({ resetAll, pdfs }) => {
+export const Sidebar: FC<SidebarProps> = ({ resetAll, pdfs, deletePDF }) => {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = async ({ active }: DragEndEvent) => {
@@ -53,7 +54,12 @@ export const Sidebar: FC<SidebarProps> = ({ resetAll, pdfs }) => {
         >
           <SortableContext items={pdfs} strategy={rectSortingStrategy}>
             {pdfs.map((pdf, idx) => (
-              <FileItem pdf={pdf} idx={idx} key={pdf.id} />
+              <FileItem
+                pdf={pdf}
+                idx={idx}
+                key={pdf.id}
+                deletePDF={deletePDF}
+              />
             ))}
           </SortableContext>
         </DndContext>

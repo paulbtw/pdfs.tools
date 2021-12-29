@@ -1,47 +1,97 @@
 import { useCallback, useState } from 'react';
-import * as PDFLib from 'pdf-lib';
+import * as PDFJS from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { PDFInfo } from '../types';
 import { fileToUint8Array, genId } from '../utils';
 
 export const usePDFNative = () => {
   const [pdfInfos, setPDFInfos] = useState<PDFInfo[] | null>(null);
+  const [requirePassword, setRequirePasswords] = useState<
+    {
+      id: string;
+      name: string;
+      status: number;
+      callback: (password: string) => void;
+      cancel: () => void;
+    }[]
+  >([]);
 
-  const addPDF = useCallback(async (f: File[]) => {
-    const pdfs = await Promise.all(
-      f.map<Promise<PDFInfo>>(async (file) => {
-        const uint8ArrayFile = await fileToUint8Array(file);
-
-        const pdf = await PDFLib.PDFDocument.load(uint8ArrayFile);
-
-        return {
-          id: genId(),
-          file,
-          fileName: file.name,
-          uint8Array: uint8ArrayFile,
-          title: pdf.getTitle() ?? file.name,
-          pageCount: pdf.getPageCount(),
-          pdfDocument: null,
-          pages: pdf.getPages().map((page, index) => {
-            return {
-              width: page.getWidth(),
-              height: page.getHeight(),
-              rotation: page.getRotation().angle,
-              pageNumber: index + 1,
-            };
-          }),
-        };
-      }),
-    );
-
-    setPDFInfos((prev) => {
-      if (!prev) {
-        return pdfs;
+  const addPDF = useCallback(
+    async (f: File[]) => {
+      if (!pdfInfos) {
+        setPDFInfos([]);
       }
+      const pdfs = await Promise.all(
+        f.map<Promise<PDFInfo | null>>(async (file) => {
+          const uint8ArrayFile = await fileToUint8Array(file);
+          const loadPDF = PDFJS.getDocument(uint8ArrayFile);
+          const curId = genId();
+          loadPDF.onPassword = async (
+            callback: (password: string) => void,
+            reason: number,
+          ) => {
+            setRequirePasswords((requirePasswords) => [
+              ...requirePasswords,
+              {
+                id: curId,
+                name: file.name,
+                status: reason,
+                callback: (pw: string) => {
+                  setRequirePasswords((reqPasswords) =>
+                    reqPasswords.filter((rp) => rp.id !== curId),
+                  );
+                  callback(pw);
+                },
+                cancel: async () => {
+                  setRequirePasswords((reqPasswords) =>
+                    reqPasswords.filter((rp) => rp.id !== curId),
+                  );
+                  await loadPDF.destroy();
+                },
+              },
+            ]);
+          };
+          try {
+            const loadedPDF = await loadPDF.promise;
+            const pageCount = loadedPDF.numPages;
+            return {
+              id: curId,
+              file,
+              fileName: file.name,
+              uint8Array: uint8ArrayFile,
+              pageCount,
+              pdfDocument: loadedPDF,
+              pages: await Promise.all(
+                Array.from({ length: pageCount }, async (_, i) => {
+                  const page = await loadedPDF.getPage(i + 1);
+                  const viewport = page.getViewport({ scale: 1 });
+                  return {
+                    width: viewport.width,
+                    height: viewport.height,
+                    rotation: viewport.rotation,
+                    pageNumber: i + 1,
+                  };
+                }),
+              ),
+            };
+          } catch (err) {
+            return null;
+          }
+        }),
+      );
 
-      return [...prev, ...pdfs];
-    });
-  }, []);
+      const filteredPDFs = pdfs.filter((pdf) => pdf !== null) as PDFInfo[];
+
+      setPDFInfos((prev) => {
+        if (!prev) {
+          return filteredPDFs;
+        }
+
+        return [...prev, ...filteredPDFs];
+      });
+    },
+    [pdfInfos],
+  );
 
   const setPDFDocument = useCallback((pdfDoc: PDFDocumentProxy, id: string) => {
     setPDFInfos((prev) => {
@@ -92,5 +142,6 @@ export const usePDFNative = () => {
     resetAll,
     deletePDF,
     setPDFDocument,
+    requirePassword,
   };
 };

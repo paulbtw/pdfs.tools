@@ -45,7 +45,6 @@ export interface PDFInfo {
   file: File;
   fileName: string;
   uint8Array: Uint8Array;
-  title: string;
   pageCount: number;
   pdfDocument: PDFDocumentProxy | null;
   pages: {
